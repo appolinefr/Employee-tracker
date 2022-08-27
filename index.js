@@ -20,9 +20,11 @@ const mysql = require("mysql2");
 
 const connection = mysql.createConnection({
   host: "localhost",
+  // MySQL username,
   user: "root",
+  // TODO: Add MySQL password here
   password: "",
-  database: "company_db",
+  database: "movies_db",
 });
 
 // function init with all options to choose from
@@ -72,7 +74,15 @@ init = () => {
 };
 
 init();
-function viewAllDpts() {}
+//prepared statement for querying the tables of db for each function
+function viewAllDpts() {
+  connection.query(`SELECT * FROM company_db`, (err, result) => {
+    if (err) {
+      console.log(err);
+    }
+    console.log(result);
+  });
+}
 function viewAllRoles() {}
 function viewAllEmployees() {}
 function addDpt() {}
