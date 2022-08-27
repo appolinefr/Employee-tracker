@@ -24,7 +24,7 @@ const connection = mysql.createConnection({
   user: "root",
   // TODO: Add MySQL password here
   password: "",
-  database: "movies_db",
+  database: "company_db",
 });
 
 // function init with all options to choose from
@@ -76,15 +76,36 @@ init = () => {
 init();
 //prepared statement for querying the tables of db for each function
 function viewAllDpts() {
-  connection.query(`SELECT * FROM company_db`, (err, result) => {
+  connection.query(`SELECT * FROM department`, (err, result) => {
     if (err) {
       console.log(err);
     }
-    console.log(result);
+    console.table(result);
+    init();
   });
 }
-function viewAllRoles() {}
-function viewAllEmployees() {}
+
+function viewAllRoles() {
+  connection.query(`SELECT * FROM roles`, (err, result) => {
+    if (err) {
+      console.log(err);
+    }
+    console.table(result);
+    init();
+  });
+}
+
+function viewAllEmployees() {
+  connection.query(`SELECT * FROM employee`, (err, result) => {
+    if (err) {
+      console.log(err);
+    }
+
+    console.table(result);
+    init();
+  });
+}
+
 function addDpt() {}
 function addEmployee() {}
 function addRole() {}

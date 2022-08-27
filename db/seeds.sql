@@ -6,5 +6,5 @@ VALUES (11, 'Accountant', 63650, 1), (12, 'Customer Liaison', 70600, 4), (13, 'H
 (16, 'Marketing Manager', 90000, 2), (17, 'Marketing Officer', 77000, 2), (10, 'Accounting Manager', 86000, 1), (18, 'Sales Representative', 66000, 3);
 
 INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
-VALUES (112, 'Jane', 'Austen', 14), (113, 'Charlotte', 'Bronte', 16), (114, 'Virginia', 'Woolf', 10), (115, 'Simone', 'De Beauvoir', 15), (116, 'John', 'Doe', 13, 14), (117, 'Elvis', 'Doe', 18, 15),
-(118, 'Tim', 'Onsentap', 17, 16);
+VALUES (112, 'Jane', 'Austen', 14, null), (113, 'Charlotte', 'Bronte', 16, null), (114, 'Virginia', 'Woolf', 10, null), (115, 'Simone', 'De Beauvoir', 15, null), (116, 'John', 'Doe', 13, 114), (117, 'Elvis', 'Doe', 18, 115),
+(118, 'Tim', 'Onsentap', 17, 112);
