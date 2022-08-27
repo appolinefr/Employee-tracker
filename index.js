@@ -17,6 +17,9 @@
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 const mysql = require("mysql2");
+const Department = require("./lib/Department");
+const Role = require("./lib/Role");
+const Employee = require("./lib/Employee");
 
 const connection = mysql.createConnection({
   host: "localhost",
@@ -106,7 +109,76 @@ function viewAllEmployees() {
   });
 }
 
-function addDpt() {}
-function addEmployee() {}
-function addRole() {}
+function addDpt() {
+  return inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What is the name of the department?",
+        name: "departmentName",
+      },
+    ])
+    .then((response) => {
+      const department = new Department(response.name);
+    });
+}
+connection.query(
+  `INSERT INTO department 
+  VALUES ()`,
+  (err, result) => {
+    if (err) {
+      console.log(err);
+    }
+
+    console.table(result);
+    init();
+  }
+);
+
+function addEmployee() {
+  return inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the employee's first name?",
+      name: "employeeFirstName",
+    },
+    {
+      type: "input",
+      message: "What is the employee's last name?",
+      name: "employeeLastName",
+    },
+    {
+      type: "list",
+      message: "What is the role of the employee?",
+      name: "employeeRole",
+      choices: [],
+    },
+    {
+      type: "list",
+      message: "Who is the manager of the employee?",
+      name: "employeeManager",
+      choices: [],
+    },
+  ]);
+}
+function addRole() {
+  return inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the name of the role?",
+      name: "roleName",
+    },
+    {
+      type: "input",
+      message: "What is the salary of the role?",
+      name: "roleSalary",
+    },
+    {
+      type: "list",
+      message: "Which department does the role belong to?",
+      name: "roleDpt",
+      choices: [],
+    },
+  ]);
+}
 function updateEmployee() {}
