@@ -71,6 +71,7 @@ init = () => {
     );
 };
 
+init();
 function viewAllDpts() {}
 function viewAllRoles() {}
 function viewAllEmployees() {}
