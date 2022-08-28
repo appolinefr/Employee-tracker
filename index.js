@@ -72,24 +72,33 @@ function viewAllDpts() {
   });
 }
 // function to view all roles with prepared statement for querying the relevant table
+//have to join tables so I can display name of dpt as opposed to dpt id
 function viewAllRoles() {
-  connection.query(`SELECT * FROM roles`, (err, result) => {
-    if (err) {
-      console.log(err);
+  connection.query(
+    `SELECT roles.id, roles.title, department.department_name, roles.salary FROM roles JOIN department ON roles.department_id = department.id ORDER BY roles.id ASC;`,
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      }
+      console.table("\n", result);
+      init();
     }
-    console.table("\n", result);
-    init();
-  });
+  );
 }
 // function to view all employees with prepared statement for querying the relevant table
+//have to join tables to display employee role title, salary and name of manager when applicable
 function viewAllEmployees() {
-  connection.query(`SELECT * FROM employee`, (err, result) => {
-    if (err) {
-      console.log(err);
+  connection.query(
+    `SELECT employee.id, employee.first_name, employee.last_name, roles.title, roles.salary, department.department_name FROM employee JOIN roles ON employee.role_id = roles.id JOIN department on roles.department_id = department.id;`,
+    (err, result) => {
+      //  `FROM employee m RIGHT JOIN employee e ON e.manager_id = m.employee_id JOIN role ON e.role_id = role.role_id JOIN department ON department.department_id = role.department_id ORDER BY e.employee_id ASC;
+      if (err) {
+        console.log(err);
+      }
+      console.table("\n", result);
+      init();
     }
-    console.table("\n", result);
-    init();
-  });
+  );
 }
 // function to add a dept with prepared statement for adding info into dept table
 function addDpt() {
