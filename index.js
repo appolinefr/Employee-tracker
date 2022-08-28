@@ -4,14 +4,14 @@ const mysql = require("mysql2");
 const Department = require("./lib/Department");
 const Role = require("./lib/Role");
 const Employee = require("./lib/Employee");
+require("dotenv").config();
 
 const connection = mysql.createConnection({
   host: "localhost",
   // MySQL username,
-  user: "root",
-  // TODO: Add MySQL password here
-  password: "",
-  database: "company_db",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 // function init with all options to choose from
@@ -53,7 +53,7 @@ init = () => {
             return addEmployee();
 
           default:
-            "Update and employee role";
+            "Update an employee's role";
             return updateEmployee();
         }
       })
@@ -67,7 +67,7 @@ function viewAllDpts() {
     if (err) {
       console.log(err);
     }
-    console.table(result);
+    console.table("\n", result);
     init();
   });
 }
@@ -77,7 +77,7 @@ function viewAllRoles() {
     if (err) {
       console.log(err);
     }
-    console.table(result);
+    console.table("\n", result);
     init();
   });
 }
@@ -87,7 +87,7 @@ function viewAllEmployees() {
     if (err) {
       console.log(err);
     }
-    console.table(result);
+    console.table("\n", result);
     init();
   });
 }
@@ -110,13 +110,13 @@ function addDpt() {
         if (err) {
           console.log(`Error in adding department`);
         }
-        console.log(`${department.name} has been added to the database`);
+        console.log(`\n ${department.name} has been added to the database`);
         init();
       });
     });
 }
 // function to add an employee with prepared statement for adding info into employee table
- // I need to be able to extract all roles/manager id from database and display them in list in prompt
+// I need to be able to extract all roles/manager id from database and display them in list in prompt
 function addEmployee() {
   return inquirer
     .prompt([
@@ -169,14 +169,14 @@ function addEmployee() {
           console.log(`Error in adding Employee`);
         }
         console.log(
-          `${employee.firstName} ${employee.lastName} has been added to the database`
+          `\n ${employee.firstName} ${employee.lastName} has been added to the database`
         );
         init();
       });
     });
 }
 // function to add a role with prepared statement for adding info into role table
- // I need to be able to extract all role from database and display them in list in prompt
+// I need to be able to extract all role from database and display them in list in prompt
 function addRole() {
   return inquirer
     .prompt([
@@ -210,7 +210,7 @@ function addRole() {
         if (err) {
           console.log(`Error in adding Role`);
         }
-        console.log(`${role.name} has been added to the database`);
+        console.log(`\n ${role.name} has been added to the database`);
         init();
       });
     });
