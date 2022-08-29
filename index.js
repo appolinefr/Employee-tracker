@@ -122,67 +122,90 @@ async function addDpt() {
     init();
   });
 }
-// function to add an employee with prepared statement for adding info into employee table
-// I need to be able to extract all roles/manager id from database and display them in list in prompt
-async function addEmployee() {
-  return inquirer
-    .prompt([
-      {
-        type: "input",
-        message: "What is the employee's first name?",
-        name: "employeeFirstName",
-      },
-      {
-        type: "input",
-        message: "What is the employee's last name?",
-        name: "employeeLastName",
-      },
-      {
-        type: "list",
-        message: "What is the role of the employee?",
-        name: "employeeRole",
-        choices: [
-          "Accountant",
-          "Customer Liaison",
-          "Marketing Officer",
-          "HR Officer",
-          "Sales Reprensentative",
-        ],
-      },
-      {
-        type: "list",
-        message: "Who is the manager of the employee?",
-        name: "employeeManager",
-        choices: ["Simone de Beauvoir", "Virginia Woolf"],
-      },
-    ])
-    .then((response) => {
-      const employee =
-        (response.employeeFirstName,
-        response.employeeLastName,
-        response.employeeRole,
-        response.employeeManager);
-      const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-  VALUES (?)`;
-      const params = [
-        employee.firstName,
-        employee.lastName,
-        employee.role,
-        employee.manager,
-      ];
-      connection.query(sql, params, (err) => {
-        if (err) {
-          console.log(`Error in adding Employee`);
-        }
-        console.log(
-          `\n ${employee.firstName} ${employee.lastName} has been added to the database`
-        );
-        init();
-      });
+
+const getRoles = () => {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT roles.title, roles.id FROM roles`;
+    connection.query(sql, (err, results) => {
+      if (err) reject(err);
+      resolve(results);
     });
+  });
+};
+
+const getManagers = () => {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT employee.first_name, employee.last_name, employee.id, employee.manager_id FROM employee`;
+    connection.query(sql, (err, results) => {
+      if (err) reject(err);
+      resolve(results);
+    });
+  });
+};
+// function to add an employee with prepared statement for adding info into employee table
+async function addEmployee() {
+  const roles = await getRoles();
+  const managers = await getManagers();
+  const response = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the employee's first name?",
+      name: "employeeFirstName",
+    },
+    {
+      type: "input",
+      message: "What is the employee's last name?",
+      name: "employeeLastName",
+    },
+    {
+      type: "list",
+      message: "What is the role of the employee?",
+      name: "employeeRole",
+      choices: roles.map((role) => role.title),
+    },
+    {
+      type: "list",
+      message: "Who is the manager of the employee?",
+      name: "employeeManager",
+      choices: managers.map((employee) => employee.last_name),
+    },
+  ]);
+
+  const params = [response.employeeFirstName, response.employeeLastName];
+
+  roles.forEach((role) => {
+    if (role.title === response.employeeRole) {
+      response.employeeRole = role.id;
+    }
+  });
+
+  const role = response.employeeRole;
+  params.push(role);
+
+  managers.forEach((employee) => {
+    if (employee.last_name === response.employeeManager) {
+      response.employeeManager = employee.id;
+    }
+  });
+
+  const manager = response.employeeManager;
+  params.push(manager);
+
+  const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+  VALUES (?,?,?,?)`;
+
+  connection.query(sql, params, (err) => {
+    if (err) {
+      console.log(`Error in adding Employee`);
+    }
+    console.log(
+      `\n ${response.employeeFirstName} ${response.employeeLastName} has been added to the database`
+    );
+    init();
+  });
 }
 
-const getDpt = () => {
+const getDpts = () => {
   return new Promise((resolve, reject) => {
     const sql = `SELECT * FROM department`;
     connection.query(sql, (err, results) => {
@@ -194,7 +217,7 @@ const getDpt = () => {
 
 // function to add a role with prepared statement for adding info into role table
 async function addRole() {
-  const departments = await getDpt();
+  const departments = await getDpts();
   const response = await inquirer.prompt([
     {
       type: "input",
