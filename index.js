@@ -135,7 +135,7 @@ const getRoles = () => {
 
 const getManagers = () => {
   return new Promise((resolve, reject) => {
-    const sql = `SELECT employee.first_name, employee.last_name, employee.id, employee.manager_id FROM employee`;
+    const sql = `SELECT employee.first_name, employee.last_name, employee.id, employee.manager_id FROM employee WHERE employee.manager_id IS NULL`;
     connection.query(sql, (err, results) => {
       if (err) reject(err);
       resolve(results);
@@ -168,6 +168,7 @@ async function addEmployee() {
       message: "Who is the manager of the employee?",
       name: "employeeManager",
       choices: managers.map((employee) => employee.last_name),
+      //add concat to get first and last name
     },
   ]);
 
