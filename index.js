@@ -1,14 +1,11 @@
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 const mysql = require("mysql2");
-const Department = require("./lib/Department");
-const Role = require("./lib/Role");
-const Employee = require("./lib/Employee");
 require("dotenv").config();
 
+//Creating mysql connection with all sensitive info in .env doc
 const connection = mysql.createConnection({
   host: "localhost",
-  // MySQL username,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
@@ -63,19 +60,21 @@ init = () => {
 init();
 // function to view all departments with prepared statement for querying the relevant table
 function viewAllDpts() {
-  connection.query(`SELECT * FROM department`, (err, result) => {
-    if (err) {
-      console.log(err);
+  connection.query(
+    `SELECT department.id, department.department_name AS department FROM department`,
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      }
+      console.table("\n", result);
+      init();
     }
-    console.table("\n", result);
-    init();
-  });
+  );
 }
 // function to view all roles with prepared statement for querying the relevant table
-//have to join tables so I can display name of dpt as opposed to dpt id
 function viewAllRoles() {
   connection.query(
-    `SELECT roles.id, roles.title, department.department_name, roles.salary FROM roles JOIN department ON roles.department_id = department.id ORDER BY roles.id ASC;`,
+    `SELECT roles.id, roles.title, department.department_name AS department, roles.salary FROM roles JOIN department ON roles.department_id = department.id ORDER BY roles.id ASC;`,
     (err, result) => {
       if (err) {
         console.log(err);
@@ -86,12 +85,13 @@ function viewAllRoles() {
   );
 }
 // function to view all employees with prepared statement for querying the relevant table
-//have to join tables to display employee role title, salary and name of manager when applicable
 function viewAllEmployees() {
   connection.query(
-    `SELECT employee.id, employee.first_name, employee.last_name, roles.title, roles.salary, department.department_name FROM employee JOIN roles ON employee.role_id = roles.id JOIN department on roles.department_id = department.id;`,
+    `SELECT employee.id, employee.first_name, employee.last_name, roles.title, roles.salary, department.department_name AS department, CONCAT (manager.first_name, " ", manager.last_name) AS manager 
+    FROM employee JOIN roles ON employee.role_id = roles.id 
+    JOIN department ON roles.department_id = department.id 
+    JOIN employee manager ON employee.manager_id = manager.id;`,
     (err, result) => {
-      //  `FROM employee m RIGHT JOIN employee e ON e.manager_id = m.employee_id JOIN role ON e.role_id = role.role_id JOIN department ON department.department_id = role.department_id ORDER BY e.employee_id ASC;
       if (err) {
         console.log(err);
       }
@@ -101,32 +101,30 @@ function viewAllEmployees() {
   );
 }
 // function to add a dept with prepared statement for adding info into dept table
-function addDpt() {
-  return inquirer
-    .prompt([
-      {
-        type: "input",
-        message: "What is the name of the department?",
-        name: "departmentName",
-      },
-    ])
-    .then((response) => {
-      const department = new Department(response.departmentName);
-      const sql = `INSERT INTO department (department_name)
+async function addDpt() {
+  const response = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the name of the department?",
+      name: "departmentName",
+    },
+  ]);
+
+  const department = response.departmentName;
+  const sql = `INSERT INTO department (department_name)
   VALUES (?)`;
-      const params = [department.name];
-      connection.query(sql, params, (err) => {
-        if (err) {
-          console.log(`Error in adding department`);
-        }
-        console.log(`\n ${department.name} has been added to the database`);
-        init();
-      });
-    });
+
+  connection.query(sql, department, (err) => {
+    if (err) {
+      console.log(`Error in adding department`);
+    }
+    console.log(`\n ${department} has been added to the database`);
+    init();
+  });
 }
 // function to add an employee with prepared statement for adding info into employee table
 // I need to be able to extract all roles/manager id from database and display them in list in prompt
-function addEmployee() {
+async function addEmployee() {
   return inquirer
     .prompt([
       {
@@ -159,12 +157,11 @@ function addEmployee() {
       },
     ])
     .then((response) => {
-      const employee = new Employee(
-        response.employeeFirstName,
+      const employee =
+        (response.employeeFirstName,
         response.employeeLastName,
         response.employeeRole,
-        response.employeeManager
-      );
+        response.employeeManager);
       const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
   VALUES (?)`;
       const params = [
@@ -184,45 +181,56 @@ function addEmployee() {
       });
     });
 }
-// function to add a role with prepared statement for adding info into role table
-// I need to be able to extract all role from database and display them in list in prompt
-function addRole() {
-  return inquirer
-    .prompt([
-      {
-        type: "input",
-        message: "What is the name of the role?",
-        name: "roleName",
-      },
-      {
-        type: "input",
-        message: "What is the salary of the role?",
-        name: "roleSalary",
-      },
-      {
-        type: "list",
-        message: "Which department does the role belong to?",
-        name: "roleDpt",
-        choices: [], // I need to be able to extract all role from database and display them in list
-      },
-    ])
-    .then((response) => {
-      const role = new Role(
-        response.roleName,
-        response.roleSalary,
-        response.roleDpt
-      );
-      const sql = `INSERT INTO role (title, salary, department)
-  VALUES (?)`;
-      const params = [role.name, role.salary, role.department];
-      connection.query(sql, params, (err) => {
-        if (err) {
-          console.log(`Error in adding Role`);
-        }
-        console.log(`\n ${role.name} has been added to the database`);
-        init();
-      });
+
+const getDpt = () => {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT * FROM department`;
+    connection.query(sql, (err, results) => {
+      if (err) reject(err);
+      resolve(results);
     });
+  });
+};
+
+// function to add a role with prepared statement for adding info into role table
+async function addRole() {
+  const departments = await getDpt();
+  const response = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the name of the role?",
+      name: "roleName",
+    },
+    {
+      type: "input",
+      message: "What is the salary of the role?",
+      name: "roleSalary",
+    },
+    {
+      type: "list",
+      name: "roleDpt",
+      message: "What department is this role in?",
+      choices: departments.map((department) => department.department_name),
+    },
+  ]);
+
+  const params = [response.roleName, response.roleSalary];
+
+  departments.forEach((department) => {
+    if (department.department_name === response.roleDpt) {
+      response.roleDpt = department.id;
+    }
+  });
+  const dept = response.roleDpt;
+  params.push(dept);
+
+  const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)`;
+
+  connection.query(sql, params, (err) => {
+    if (err) throw err;
+    console.log(`\n ${response.roleName} has been added to the database!`);
+  });
 }
+
 //need to work on this last function
 function updateEmployee() {}
