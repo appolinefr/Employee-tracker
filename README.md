@@ -6,7 +6,7 @@
 - [Project Requirements](#project-requirements)
 - [What I have learned](#what-i-have-learned)
 - [Challenges](#challenges)
-- [Screenshot of CLI](#screenshot-of-the-cli)
+- [Screenshot of CLI](#screenshot-of-cli)
 - [Link to walkthrough video](#link-to-walkthrough-video)
 
 ## Description of Project
