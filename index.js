@@ -120,7 +120,7 @@ async function addDpt() {
     if (err) {
       console.log(`Error in adding department`);
     }
-    console.log(`\n ${department} has been added to the database`);
+    console.log(`\n ${department} has been added to the database \n `);
     init();
   });
 }
@@ -173,9 +173,10 @@ async function addEmployee() {
       type: "list",
       message: "Who is the manager of the employee?",
       name: "employeeManager",
-      choices: managers.map(
-        (employee) => employee.first_name + " " + employee.last_name
-      ),
+      choices: managers.map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      })),
     },
   ]);
 
@@ -183,16 +184,8 @@ async function addEmployee() {
     response.employeeFirstName,
     response.employeeLastName,
     response.employeeRole,
+    response.employeeManager,
   ];
-
-  managers.forEach((employee) => {
-    if (employee.last_name === response.employeeManager) {
-      response.employeeManager = employee.id;
-    }
-  });
-
-  const manager = response.employeeManager;
-  params.push(manager);
 
   const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
   VALUES (?,?,?,?)`;
@@ -202,8 +195,7 @@ async function addEmployee() {
       console.log(`Error in adding Employee`);
     }
     console.log(
-      "\n",
-      "${response.employeeFirstName} ${response.employeeLastName} has been added to the database"
+      `\n ${response.employeeFirstName} ${response.employeeLastName} has been added to the database \n `
     );
     init();
   });
@@ -211,7 +203,7 @@ async function addEmployee() {
 
 const getDpts = () => {
   return new Promise((resolve, reject) => {
-    const sql = `SELECT * FROM department`;
+    const sql = `SELECT department.id, department.department_name FROM department`;
     connection.query(sql, (err, results) => {
       if (err) reject(err);
       resolve(results);
@@ -237,8 +229,8 @@ async function addRole() {
       type: "list",
       name: "roleDpt",
       message: "What department is this role in?",
-      choices: departments.map(({ name, id }) => ({
-        name: name,
+      choices: departments.map(({ department_name, id }) => ({
+        name: department_name,
         value: id,
       })),
     },
@@ -250,7 +242,6 @@ async function addRole() {
 
   connection.query(sql, params, (err) => {
     if (err) throw err;
-    console.log(`\n ${response.roleName} has been added to the database!`);
   });
 
   init();
@@ -297,7 +288,7 @@ async function updateEmployee() {
     if (err) {
       console.log(`Error in updating Employee`);
     }
-    console.log(`\n Role has been updated in the database`);
+    console.log(`\n Role has been updated in the database \n `);
     init();
   });
 }
