@@ -26,6 +26,10 @@ init = () => {
         "Add a role",
         "Add an employee",
         "Update an employee role",
+        "View employees by manager",
+        "Update employee's manager",
+        "View employees per department",
+        "Delete an employee, role or department",
       ],
     })
     .then(
@@ -48,6 +52,18 @@ init = () => {
 
           case "Add an employee":
             return addEmployee();
+
+          case "View employees per department":
+            return viewEmployeeDpt();
+
+          case "Update employee's manager":
+            return updateManager();
+
+          case "View employees by manager":
+            return viewEmployeeManager();
+
+          case "Delete an employee, role or department":
+            return deleteFromDb();
 
           default:
             "Update an employee's role";
@@ -241,11 +257,16 @@ async function addRole() {
   const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)`;
 
   connection.query(sql, params, (err) => {
-    if (err) throw err;
+    if (err) {
+      console.log(`Error in adding role`);
+    }
+    console.log(`\n Role has been updated in the database \n `);
+    init();
   });
 
   init();
 }
+
 
 const getEmployees = () => {
   return new Promise((resolve, reject) => {
@@ -289,6 +310,228 @@ async function updateEmployee() {
       console.log(`Error in updating Employee`);
     }
     console.log(`\n Role has been updated in the database \n `);
+    init();
+  });
+}
+
+// View employees by department.
+async function viewEmployeeDpt() {
+  const departments = await getDpts();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      name: "employeeDpt",
+      message: "Which department would you like to see?",
+      choices: departments.map(({ department_name, id }) => ({
+        name: department_name,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql =
+    "SELECT employee.first_name, employee.last_name FROM employee JOIN roles ON roles.department_id WHERE roles.department_id = ? ";
+
+  connection.query(sql, response.employeeDpt, (err, result) => {
+    if (err) {
+      console.log(err);
+    }
+    console.table("\n", result);
+    init();
+  });
+}
+
+// View employees by manager.
+async function viewEmployeeManager() {
+  const managers = await getManagers();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which manager would you like to choose?",
+      name: "employeeManager",
+      choices: managers.map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql =
+    "SELECT employee.first_name, employee.last_name FROM employee WHERE employee.manager_id = ? ";
+
+  connection.query(sql, response.employeeManager, (err, result) => {
+    if (err) {
+      console.log(err);
+    }
+    console.table("\n", result);
+    init();
+  });
+}
+
+//Getting the employees excluding managers
+const getEmpOnly = () => {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT employee.id, employee.first_name, employee.last_name FROM employee WHERE employee.manager_id IS NOT NULL`;
+    connection.query(sql, (err, results) => {
+      if (err) reject(err);
+      resolve(results);
+    });
+  });
+};
+// Update employee managers.
+async function updateManager() {
+  const employees = await getEmpOnly();
+  const managers = await getManagers();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which employee would you like to update?",
+      name: "employeeName",
+      choices: employees.map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      })),
+    },
+    {
+      type: "list",
+      message: "What is the new manager for this employee?",
+      name: "updateManager",
+      choices: managers.map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql = `UPDATE employee SET manager_id = ? WHERE id = ?`;
+
+  connection.query(
+    sql,
+    [response.updateManager, response.employeeName],
+    (err) => {
+      if (err) {
+        console.log(`Error in updating manager`);
+      }
+      console.log(`\n Manager has been updated in the database \n `);
+      init();
+    }
+  );
+}
+
+//init function to delete from database
+function deleteFromDb() {
+  return inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "choice",
+        message: "What would you like to do?",
+        choices: ["Delete a role", "Delete a department", "Delete an employee"],
+      },
+    ])
+
+    .then(
+      (makeChoice = (response) => {
+        switch (response.choice) {
+          case "Delete a role":
+            return deleteRole();
+
+          case "Delete an employee":
+            return deleteEmp();
+
+          case "Delete a department":
+            return deleteDpt();
+        }
+      })
+    );
+}
+
+// function to delete a department
+async function deleteDpt() {
+  const departments = await getDpts();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      name: "dptDelete",
+      message: "Which Department would you like to delete?",
+      choices: departments.map(({ department_name, id }) => ({
+        name: department_name,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql = `DELETE FROM department WHERE id = ?`;
+  console.log(response.dptDelete);
+
+  connection.query(sql, response.dptDelete, (err) => {
+    if (err) {
+      console.log(`Error in deleting department`);
+    } else {
+      console.log(
+        `\n ${response.dptDelete} Department has been deleted from the database \n `
+      );
+    }
+    init();
+  });
+}
+
+//function to delete a role
+async function deleteRole() {
+  const roles = await getRoles();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      name: "roleDelete",
+      message: "Which role would you like to delete?",
+      choices: roles.map(({ title, id }) => ({
+        name: title,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql = `DELETE FROM roles WHERE id = ?`;
+  console.log(response.roleDelete);
+
+  connection.query(sql, response.roleDelete, (err) => {
+    if (err) {
+      console.log(`Error in deleting role`);
+    } else {
+      console.log(
+        `\n ${response.roleDelete} has been deleted from the database \n `
+      );
+    }
+    init();
+  });
+}
+
+//function to delete an employee
+async function deleteEmp() {
+  const employees = await getEmployees();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      name: "employeeDelete",
+      message: "Which employee would you like to delete?",
+      choices: employees.map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql = `DELETE FROM employee WHERE id = ?`;
+  console.log(response.employeeDelete);
+
+  connection.query(sql, response.employeeDelete, (err) => {
+    if (err) {
+      console.log(`Error in deleting employee`);
+    } else {
+      console.log(
+        `\n ${response.employeeDelete} has been deleted from the database \n `
+      );
+    }
     init();
   });
 }
