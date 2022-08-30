@@ -25,7 +25,7 @@ init = () => {
         "Add a department",
         "Add a role",
         "Add an employee",
-        "Update and employee role",
+        "Update an employee role",
       ],
     })
     .then(
@@ -61,7 +61,7 @@ init();
 // function to view all departments with prepared statement for querying the relevant table
 function viewAllDpts() {
   connection.query(
-    `SELECT department.id, department.department_name AS department FROM department`,
+    `SELECT department.id, department.department_name AS Department FROM department`,
     (err, result) => {
       if (err) {
         console.log(err);
@@ -74,7 +74,7 @@ function viewAllDpts() {
 // function to view all roles with prepared statement for querying the relevant table
 function viewAllRoles() {
   connection.query(
-    `SELECT roles.id, roles.title, department.department_name AS department, roles.salary FROM roles JOIN department ON roles.department_id = department.id ORDER BY roles.id ASC;`,
+    `SELECT roles.id, roles.title AS Role, department.department_name AS Department, roles.salary AS Salary FROM roles JOIN department ON roles.department_id = department.id ORDER BY roles.id ASC;`,
     (err, result) => {
       if (err) {
         console.log(err);
@@ -87,10 +87,12 @@ function viewAllRoles() {
 // function to view all employees with prepared statement for querying the relevant table
 function viewAllEmployees() {
   connection.query(
-    `SELECT employee.id, employee.first_name, employee.last_name, roles.title, roles.salary, department.department_name AS department, CONCAT (manager.first_name, " ", manager.last_name) AS manager 
-    FROM employee JOIN roles ON employee.role_id = roles.id 
-    JOIN department ON roles.department_id = department.id 
-    JOIN employee manager ON employee.manager_id = manager.id;`,
+    `SELECT employee.id, employee.first_name AS FirstName, employee.last_name AS LastName, roles.title AS Role, department.department_name AS Department, roles.salary AS Salary, 
+  CONCAT (manager.first_name, " ", manager.last_name) AS Manager
+  FROM employee
+  LEFT JOIN roles ON employee.role_id = roles.id
+  LEFT JOIN department ON roles.department_id = department.id
+  LEFT JOIN employee manager ON employee.manager_id = manager.id`,
     (err, result) => {
       if (err) {
         console.log(err);
@@ -142,6 +144,7 @@ const getManagers = () => {
     });
   });
 };
+
 // function to add an employee with prepared statement for adding info into employee table
 async function addEmployee() {
   const roles = await getRoles();
@@ -161,27 +164,26 @@ async function addEmployee() {
       type: "list",
       message: "What is the role of the employee?",
       name: "employeeRole",
-      choices: roles.map((role) => role.title),
+      choices: roles.map(({ title, id }) => ({
+        name: title,
+        value: id,
+      })),
     },
     {
       type: "list",
       message: "Who is the manager of the employee?",
       name: "employeeManager",
-      choices: managers.map((employee) => employee.last_name),
-      //add concat to get first and last name
+      choices: managers.map(
+        (employee) => employee.first_name + " " + employee.last_name
+      ),
     },
   ]);
 
-  const params = [response.employeeFirstName, response.employeeLastName];
-
-  roles.forEach((role) => {
-    if (role.title === response.employeeRole) {
-      response.employeeRole = role.id;
-    }
-  });
-
-  const role = response.employeeRole;
-  params.push(role);
+  const params = [
+    response.employeeFirstName,
+    response.employeeLastName,
+    response.employeeRole,
+  ];
 
   managers.forEach((employee) => {
     if (employee.last_name === response.employeeManager) {
@@ -200,7 +202,8 @@ async function addEmployee() {
       console.log(`Error in adding Employee`);
     }
     console.log(
-      `\n ${response.employeeFirstName} ${response.employeeLastName} has been added to the database`
+      "\n",
+      "${response.employeeFirstName} ${response.employeeLastName} has been added to the database"
     );
     init();
   });
@@ -234,19 +237,14 @@ async function addRole() {
       type: "list",
       name: "roleDpt",
       message: "What department is this role in?",
-      choices: departments.map((department) => department.department_name),
+      choices: departments.map(({ name, id }) => ({
+        name: name,
+        value: id,
+      })),
     },
   ]);
 
-  const params = [response.roleName, response.roleSalary];
-
-  departments.forEach((department) => {
-    if (department.department_name === response.roleDpt) {
-      response.roleDpt = department.id;
-    }
-  });
-  const dept = response.roleDpt;
-  params.push(dept);
+  const params = [response.roleName, response.roleSalary, response.roleDpt];
 
   const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)`;
 
@@ -254,7 +252,52 @@ async function addRole() {
     if (err) throw err;
     console.log(`\n ${response.roleName} has been added to the database!`);
   });
+
+  init();
 }
 
-//need to work on this last function
-function updateEmployee() {}
+const getEmployees = () => {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT employee.id, employee.first_name, employee.last_name FROM employee`;
+    connection.query(sql, (err, results) => {
+      if (err) reject(err);
+      resolve(results);
+    });
+  });
+};
+
+//gets the employee's name and get the role then assign new role
+async function updateEmployee() {
+  const employees = await getEmployees();
+  const roles = await getRoles();
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which employee would you like to update?",
+      name: "employeeName",
+      choices: employees.map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      })),
+    },
+    {
+      type: "list",
+      message: "What is the new role for this employee?",
+      name: "updateRole",
+      choices: roles.map(({ title, id }) => ({
+        name: title,
+        value: id,
+      })),
+    },
+  ]);
+
+  const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
+
+  connection.query(sql, [response.updateRole, response.employeeName], (err) => {
+    if (err) {
+      console.log(`Error in updating Employee`);
+    }
+    console.log(`\n Role has been updated in the database`);
+    init();
+  });
+}
