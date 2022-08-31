@@ -200,7 +200,7 @@ const getManagers = () => {
 
 const getDpts = () => {
   return new Promise((resolve, reject) => {
-    const sql = `SELECT department.id, department.department_name FROM department`;
+    const sql = `SELECT * FROM department`;
     connection.query(sql, (err, results) => {
       if (err) reject(err);
       resolve(results);
@@ -470,14 +470,13 @@ async function deleteDpt() {
   ]);
 
   const sql = `DELETE FROM department WHERE id = ?`;
+  console.log(response.dptDelete);
 
   connection.query(sql, response.dptDelete, (err) => {
     if (err) {
       console.log(`Error in deleting department`);
     } else {
-      console.log(
-        `\n ${response.dptDelete} Department has been deleted from the database \n `
-      );
+      console.log(`\n Department has been deleted from the database \n `);
     }
     init();
   });
