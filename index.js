@@ -138,7 +138,7 @@ async function viewEmployeeDpt() {
   ]);
 
   const sql =
-    "SELECT employee.first_name, employee.last_name FROM employee JOIN roles ON roles.department_id WHERE roles.department_id = ? ";
+    "SELECT employee.first_name, employee.last_name FROM employee LEFT JOIN roles ON roles.department_id WHERE roles.department_id = ? ";
 
   connection.query(sql, response.employeeDpt, (err, result) => {
     if (err) {
@@ -344,8 +344,6 @@ async function addRole() {
     console.log(`\n Role has been updated in the database \n `);
     init();
   });
-
-  init();
 }
 
 //gets the employee's name and get the role then assign new role
@@ -470,7 +468,6 @@ async function deleteDpt() {
   ]);
 
   const sql = `DELETE FROM department WHERE id = ?`;
-  console.log(response.dptDelete);
 
   connection.query(sql, response.dptDelete, (err) => {
     if (err) {
